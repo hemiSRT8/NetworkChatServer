@@ -10,44 +10,35 @@ public class ClientSocketToNickRepository {
     private static ClientSocketToNickRepository clientSocketToNickRepository;
     private Map<String, String> clientSocketToNickMap;
 
-    /**
-     * Locks
-     */
-    private final Object addLock = new Object();
-    private final Object removeLock = new Object();
-    private final Object getLock = new Object();
-
     private ClientSocketToNickRepository() {
         if (clientSocketToNickRepository == null) {
             clientSocketToNickRepository = this;
             clientSocketToNickMap = new HashMap<String, String>();
+
+            LOGGER.info("ClientSocketToNickRepository was successfully created");
         }
     }
 
     public static synchronized ClientSocketToNickRepository getInstance() {
-        LOGGER.info("ClientSocketToNickRepository was requested");
         return clientSocketToNickRepository == null ? new ClientSocketToNickRepository() : clientSocketToNickRepository;
     }
 
-    public void add(String clientId, String nickname) {
-        synchronized (addLock) {
-            clientSocketToNickMap.put(clientId, nickname);
-        }
+    public synchronized void add(String clientId, String nickname) {
+        clientSocketToNickMap.put(clientId, nickname);
+
         LOGGER.info("Nickname {} was successfully added", nickname);
     }
 
-    public void remove(String clientId) {
+    public synchronized void remove(String clientId) {
         String nickname;
-        synchronized (removeLock) {
-            nickname = clientSocketToNickMap.get(clientId);
-            clientSocketToNickMap.remove(clientId);
-        }
+
+        nickname = clientSocketToNickMap.get(clientId);
+        clientSocketToNickMap.remove(clientId);
+
         LOGGER.info("Nickname {} was removed successfully", nickname);
     }
 
-    public String getNick(String clientId) {
-        synchronized (getLock) {
-            return clientSocketToNickMap.get(clientId);
-        }
+    public synchronized String getNick(String clientId) {
+        return clientSocketToNickMap.get(clientId);
     }
 }

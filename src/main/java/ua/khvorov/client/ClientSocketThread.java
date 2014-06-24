@@ -23,7 +23,6 @@ public class ClientSocketThread extends Thread {
     public ClientSocketThread(Socket acceptedSocket, String clientId) {
         this.acceptedSocket = acceptedSocket;
         this.clientId = clientId;
-
         start(); //Let`s go
     }
 
@@ -76,18 +75,18 @@ public class ClientSocketThread extends Thread {
     }
 
     private void updateClients(String message) {
-        LOGGER.info("Client`s updating was started");
+        LOGGER.debug("Client`s updating was started");
         String formattedMessage = MessageGenerator.messageGenerator(message, clientId);
         for (ClientSocketThread cst : ClientSocketRepository.getInstance().getAll()) {
             cst.sendMessage(formattedMessage);
         }
-        LOGGER.info("Client`s updating was finished");
+        LOGGER.debug("Client`s updating was finished");
     }
 
     private void sendMessage(String message) {
         writer.println(message);
         writer.flush();
-        LOGGER.info("Message `{}` was successfully sent", message);
+        LOGGER.debug("Message `{}` was successfully sent", message);
     }
 
     /**
