@@ -14,12 +14,10 @@ public class ClientSocketRepository {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientSocketRepository.class);
 
     private ClientSocketRepository() {
-        if (clientSocketRepository == null) {
-            clientSocketRepository = this;
-            clientSocketThreadSet = new CopyOnWriteArraySet<ClientSocketThread>();
+        clientSocketRepository = this;
+        clientSocketThreadSet = new CopyOnWriteArraySet<ClientSocketThread>();
 
-            LOGGER.info("ClientSocketRepository was successfully created (singleton)");
-        }
+        LOGGER.info("ClientSocketRepository was successfully created (singleton)");
     }
 
     public static synchronized ClientSocketRepository getInstance() {
