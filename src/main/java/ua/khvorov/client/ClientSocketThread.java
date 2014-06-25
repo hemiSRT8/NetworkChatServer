@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.SocketException;
 
 public class ClientSocketThread extends Thread {
 
@@ -39,22 +40,26 @@ public class ClientSocketThread extends Thread {
          * Add nickname to map
          */
         ClientSocketToNickRepository.getInstance().add(clientId, registerNickname());
+        writer.println("You are online!");
+        writer.flush();
 
         while (true) {
             try {
                 String msg = reader.readLine();
                 if (msg != null) {
                     updateClients(msg);
-                } else {
+                }
+            } catch (IOException e) {
+                try {
                     acceptedSocket.close();
                     ClientSocketRepository.getInstance().remove(this);
                     String nickname = ClientSocketToNickRepository.getInstance().getNick(clientId);
                     ClientSocketToNickRepository.getInstance().remove(clientId);
                     LOGGER.info("acceptedSocket with nickname `{}` was closed", nickname);
                     return;
+                } catch (IOException e1) {
+                    LOGGER.error("IO exception while socket closing", e);
                 }
-            } catch (IOException e) {
-                LOGGER.error("IO exception", e);
             }
         }
     }
@@ -62,11 +67,21 @@ public class ClientSocketThread extends Thread {
     private String registerNickname() {
         String nickname = null;
 
-        writer.println("You are online ! Please , send your nickname !");
+        writer.println("Please , send your nickname !");
         writer.flush();
 
         try {
             nickname = reader.readLine();
+        } catch (SocketException e) {
+            try {
+                acceptedSocket.close();
+                ClientSocketRepository.getInstance().remove(this);
+                String nick = ClientSocketToNickRepository.getInstance().getNick(clientId);
+                ClientSocketToNickRepository.getInstance().remove(clientId);
+                LOGGER.info("acceptedSocket with nickname `{}` was closed", nick);
+            } catch (IOException e1) {
+                LOGGER.error("IO exception while socket closing", e);
+            }
         } catch (IOException e) {
             LOGGER.error("IO exception", e);
         }
