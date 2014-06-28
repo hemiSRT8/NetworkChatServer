@@ -12,7 +12,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-public class ClientSocketThread extends Thread {
+public class ClientSocketThread {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientSocketThread.class);
     private Socket acceptedSocket;
@@ -23,10 +23,8 @@ public class ClientSocketThread extends Thread {
     public ClientSocketThread(Socket acceptedSocket, String clientId) {
         this.acceptedSocket = acceptedSocket;
         this.clientId = clientId;
-        start(); //Let`s go
     }
 
-    @Override
     public void run() {
         try {
             writer = new PrintWriter(acceptedSocket.getOutputStream());
@@ -42,19 +40,20 @@ public class ClientSocketThread extends Thread {
 
         while (true) {
             try {
-                String msg = reader.readLine();
-                if (msg != null) {
-                    updateClients(msg);
-                } else {
-                    acceptedSocket.close();
-                    ClientSocketRepository.getInstance().remove(this);
-                    String nickname = ClientSocketToNickRepository.getInstance().getNick(clientId);
-                    ClientSocketToNickRepository.getInstance().remove(clientId);
-                    LOGGER.info("acceptedSocket with nickname `{}` was closed", nickname);
-                    return;
-                }
+                updateClients(reader.readLine());
             } catch (IOException e) {
                 LOGGER.error("IO exception", e);
+
+                try {
+                    acceptedSocket.close();
+                } catch (IOException e1) {
+                    LOGGER.error("IO exception while acceptedSocket closing", e);
+                }
+
+                ClientSocketRepository.getInstance().remove(this);
+                ClientSocketToNickRepository.getInstance().remove(clientId);
+                LOGGER.info("acceptedSocket with id `{}` was closed", clientId);
+                break;
             }
         }
     }

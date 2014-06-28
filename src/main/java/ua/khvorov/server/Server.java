@@ -42,8 +42,14 @@ public class Server {
                 Socket socket = serverSocket.accept();
                 LOGGER.info("New client was successfully accepted");
 
-                clientSocketRepository.add(
-                        new ClientSocketThread(socket, UUID.randomUUID().toString()));
+                final ClientSocketThread clientSocketThread = new ClientSocketThread(socket, UUID.randomUUID().toString());
+                clientSocketRepository.add(clientSocketThread);
+
+                new Thread() {
+                    public void run() {
+                        clientSocketThread.run();
+                    }
+                }.start();
             }
 
         } catch (IOException e) {

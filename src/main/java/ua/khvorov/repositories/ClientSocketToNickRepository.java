@@ -6,7 +6,7 @@ import java.util.*;
 
 public class ClientSocketToNickRepository {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ClientSocketRepository.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClientSocketToNickRepository.class);
     private static ClientSocketToNickRepository clientSocketToNickRepository;
     private Map<String, String> clientSocketToNickMap;
 
@@ -26,16 +26,13 @@ public class ClientSocketToNickRepository {
     public synchronized void add(String clientId, String nickname) {
         clientSocketToNickMap.put(clientId, nickname);
 
-        LOGGER.info("Nickname {} was successfully added", nickname);
+        LOGGER.info("Nickname with id {} was added successfully", clientId);
     }
 
     public synchronized void remove(String clientId) {
-        String nickname;
-
-        nickname = clientSocketToNickMap.get(clientId);
         clientSocketToNickMap.remove(clientId);
 
-        LOGGER.info("Nickname {} was removed successfully", nickname);
+        LOGGER.info("Nickname with id {} was removed successfully", clientId);
     }
 
     public synchronized String getNick(String clientId) {
