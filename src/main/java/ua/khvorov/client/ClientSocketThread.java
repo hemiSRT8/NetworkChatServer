@@ -1,92 +1,61 @@
 package ua.khvorov.client;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import ua.khvorov.repositories.ClientSocketRepository;
-import ua.khvorov.repositories.ClientSocketToNickRepository;
-import ua.khvorov.util.MessageGenerator;
+import org.slf4j.*;
+import org.springframework.context.ApplicationContext;
+import ua.khvorov.message.MessageService;
+import ua.khvorov.repositories.*;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
 
-public class ClientSocketThread extends Thread {
+public class ClientSocketThread {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ClientSocketThread.class);
-    private Socket acceptedSocket;
+    private final Logger LOGGER = LoggerFactory.getLogger(getClass());
+
+    private ClientSocketRepository clientSocketRepository;
+    private OnlineUsersRepository onlineUsersRepository;
     private String clientId;
-    private PrintWriter writer;
-    private BufferedReader reader;
+    private Socket acceptedSocket;
+    private ObjectInputStream reader;
+    private MessageService messageService;
 
-    public ClientSocketThread(Socket acceptedSocket, String clientId) {
+    public ClientSocketThread(Socket acceptedSocket, String clientId, ApplicationContext context) {
         this.acceptedSocket = acceptedSocket;
         this.clientId = clientId;
-        start(); //Let`s go
+
+        clientSocketRepository = (ClientSocketRepository) context.getBean("clientSocketRepository");
+        onlineUsersRepository = (OnlineUsersRepository) context.getBean("onlineUsersRepository");
+
+        LOGGER.info("ClientSocketThread was successfully created,id={}", clientId);
     }
 
-    @Override
-    public void run() {
+    public void run(ApplicationContext context) {
         try {
-            writer = new PrintWriter(acceptedSocket.getOutputStream());
-            reader = new BufferedReader(new InputStreamReader(acceptedSocket.getInputStream()));
+            reader = new ObjectInputStream(acceptedSocket.getInputStream());
+            messageService = new MessageService(new ObjectOutputStream(acceptedSocket.getOutputStream()), clientId, context);
         } catch (IOException e) {
             LOGGER.error("IO exception", e);
         }
-
-        /**
-         * Add nickname to map
-         */
-        ClientSocketToNickRepository.getInstance().add(clientId, registerNickname());
 
         while (true) {
             try {
-                String msg = reader.readLine();
-                if (msg != null) {
-                    updateClients(msg);
-                } else {
-                    acceptedSocket.close();
-                    ClientSocketRepository.getInstance().remove(this);
-                    String nickname = ClientSocketToNickRepository.getInstance().getNick(clientId);
-                    ClientSocketToNickRepository.getInstance().remove(clientId);
-                    LOGGER.info("acceptedSocket with nickname `{}` was closed", nickname);
-                    return;
-                }
+                Object object = reader.readObject();
+                messageService.verifyInputObject(object);
             } catch (IOException e) {
                 LOGGER.error("IO exception", e);
+                try {
+                    acceptedSocket.close();
+                    clientSocketRepository.remove(this);
+                    onlineUsersRepository.remove(clientId);
+                    LOGGER.info("acceptedSocket was closed,id={}", clientId);
+                    return;
+                } catch (IOException e1) {
+                    LOGGER.error("IO exception", e);
+                }
+            } catch (ClassNotFoundException e) {
+                LOGGER.error("ClassNotFoundException", e);
             }
         }
-    }
-
-    private String registerNickname() {
-        String nickname = null;
-
-        writer.println("You are online ! Please , send your nickname !");
-        writer.flush();
-
-        try {
-            nickname = reader.readLine();
-        } catch (IOException e) {
-            LOGGER.error("IO exception", e);
-        }
-
-        return nickname;
-    }
-
-    private void updateClients(String message) {
-        LOGGER.debug("Client`s updating was started");
-        String formattedMessage = MessageGenerator.messageGenerator(message, clientId);
-        for (ClientSocketThread cst : ClientSocketRepository.getInstance().getAll()) {
-            cst.sendMessage(formattedMessage);
-        }
-        LOGGER.debug("Client`s updating was finished");
-    }
-
-    private void sendMessage(String message) {
-        writer.println(message);
-        writer.flush();
-        LOGGER.debug("Message `{}` was successfully sent", message);
     }
 
     /**
@@ -116,6 +85,10 @@ public class ClientSocketThread extends Thread {
      */
     public String getClientId() {
         return clientId;
+    }
+
+    public MessageService getMessageService() {
+        return messageService;
     }
 }
 

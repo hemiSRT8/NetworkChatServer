@@ -1,41 +1,35 @@
 package ua.khvorov.repositories;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.slf4j.*;
+import org.springframework.stereotype.Component;
 import ua.khvorov.client.ClientSocketThread;
 
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+@Component
 public class ClientSocketRepository {
 
-    private static ClientSocketRepository clientSocketRepository;
-    private Set<ClientSocketThread> clientSocketThreadSet;
-    private static final Logger LOGGER = LoggerFactory.getLogger(ClientSocketRepository.class);
+    private final Logger LOGGER = LoggerFactory.getLogger(getClass());
+    private Set<ClientSocketThread> socketThreads;
 
     private ClientSocketRepository() {
-        clientSocketRepository = this;
-        clientSocketThreadSet = new CopyOnWriteArraySet<ClientSocketThread>();
-
-        LOGGER.info("ClientSocketRepository was successfully created (singleton)");
-    }
-
-    public static synchronized ClientSocketRepository getInstance() {
-        return (clientSocketRepository == null) ? new ClientSocketRepository() : clientSocketRepository;
+        socketThreads = new CopyOnWriteArraySet<ClientSocketThread>();
+        LOGGER.info("ClientSocketRepository was created");
     }
 
     public Set<ClientSocketThread> getAll() {
-        return clientSocketThreadSet;
+        return socketThreads;
     }
 
     public void add(ClientSocketThread clientSocketThread) {
-        clientSocketThreadSet.add(clientSocketThread);
-        LOGGER.debug("New ClientSocketThread was added to ClientSocketRepository");
+        socketThreads.add(clientSocketThread);
+        LOGGER.debug("New ClientSocketThread was added to ClientSocketRepository,id={}", clientSocketThread.getClientId());
     }
 
     public void remove(ClientSocketThread clientSocketThread) {
-        clientSocketThreadSet.remove(clientSocketThread);
-        LOGGER.debug("ClientSocketThread was successfully removed from ClientSocketRepository");
+        socketThreads.remove(clientSocketThread);
+        LOGGER.debug("ClientSocketThread removed from ClientSocketRepository,id={}", clientSocketThread.getClientId());
     }
 }
 
