@@ -30,7 +30,7 @@ public class Server {
                 LOGGER.info("Socket ({}) was accepted", socket.getInetAddress().getHostAddress());
                 new Thread() {
                     public void run() {
-                        ClientSocketThread clientSocketThread = new ClientSocketThread(socket, UUID.randomUUID().toString(), context);
+                        ClientSocketThread clientSocketThread = new ClientSocketThread(socket, UUID.randomUUID().toString());
                         clientSocketRepository.add(clientSocketThread);
                         clientSocketThread.run(context);
                     }

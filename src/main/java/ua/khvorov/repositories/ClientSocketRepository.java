@@ -24,12 +24,22 @@ public class ClientSocketRepository {
 
     public void add(ClientSocketThread clientSocketThread) {
         socketThreads.add(clientSocketThread);
-        LOGGER.debug("New ClientSocketThread was added to ClientSocketRepository,id={}", clientSocketThread.getClientId());
+        LOGGER.info("New ClientSocketThread was added to ClientSocketRepository,id={}", clientSocketThread.getClientId());
     }
 
     public void remove(ClientSocketThread clientSocketThread) {
         socketThreads.remove(clientSocketThread);
-        LOGGER.debug("ClientSocketThread removed from ClientSocketRepository,id={}", clientSocketThread.getClientId());
+        LOGGER.info("ClientSocketThread removed from ClientSocketRepository,id={}", clientSocketThread.getClientId());
+    }
+
+    public ClientSocketThread getSocket(String clientId) {
+        for (ClientSocketThread clientSocketThread : socketThreads) {
+            if (clientSocketThread.getClientId().equals(clientId)) {
+                return clientSocketThread;
+            }
+        }
+
+        return null;
     }
 }
 

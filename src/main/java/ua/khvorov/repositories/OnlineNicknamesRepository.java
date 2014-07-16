@@ -7,13 +7,13 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
-public class OnlineUsersRepository {
+public class OnlineNicknamesRepository {
 
     private final Logger LOGGER = LoggerFactory.getLogger(getClass());
 
     private Map<String, String> clientSocketToNickMap;
 
-    private OnlineUsersRepository() {
+    private OnlineNicknamesRepository() {
         clientSocketToNickMap = new ConcurrentHashMap<String, String>();
         LOGGER.info("OnlineUsersRepository was created");
     }

@@ -2,6 +2,7 @@ package ua.khvorov.client;
 
 import org.slf4j.*;
 import org.springframework.context.ApplicationContext;
+import ua.khvorov.database.dao.UserDao;
 import ua.khvorov.message.MessageService;
 import ua.khvorov.repositories.*;
 
@@ -12,19 +13,14 @@ public class ClientSocketThread {
 
     private final Logger LOGGER = LoggerFactory.getLogger(getClass());
 
-    private ClientSocketRepository clientSocketRepository;
-    private OnlineUsersRepository onlineUsersRepository;
     private String clientId;
     private Socket acceptedSocket;
     private ObjectInputStream reader;
     private MessageService messageService;
 
-    public ClientSocketThread(Socket acceptedSocket, String clientId, ApplicationContext context) {
+    public ClientSocketThread(Socket acceptedSocket, String clientId) {
         this.acceptedSocket = acceptedSocket;
         this.clientId = clientId;
-
-        clientSocketRepository = (ClientSocketRepository) context.getBean("clientSocketRepository");
-        onlineUsersRepository = (OnlineUsersRepository) context.getBean("onlineUsersRepository");
 
         LOGGER.info("ClientSocketThread was successfully created,id={}", clientId);
     }
@@ -32,22 +28,30 @@ public class ClientSocketThread {
     public void run(ApplicationContext context) {
         try {
             reader = new ObjectInputStream(acceptedSocket.getInputStream());
-            messageService = new MessageService(new ObjectOutputStream(acceptedSocket.getOutputStream()), clientId, context);
+            messageService = new MessageService(
+                    new ObjectOutputStream(acceptedSocket.getOutputStream()),
+                    clientId,
+                    (UserDao) context.getBean("userDao"),
+                    (RegisteredUsersCache) context.getBean("registeredUsersCache"),
+                    (ClientSocketRepository) context.getBean("clientSocketRepository"),
+                    (OnlineNicknamesRepository) context.getBean("onlineNicknamesRepository"));
         } catch (IOException e) {
             LOGGER.error("IO exception", e);
         }
 
         while (true) {
             try {
-                Object object = reader.readObject();
-                messageService.verifyInputObject(object);
+                messageService.verifyInputObject(reader.readObject());
             } catch (IOException e) {
                 LOGGER.error("IO exception", e);
                 try {
                     acceptedSocket.close();
-                    clientSocketRepository.remove(this);
-                    onlineUsersRepository.remove(clientId);
                     LOGGER.info("acceptedSocket was closed,id={}", clientId);
+
+                    messageService.removeFromClientSocketRepository(this);
+                    messageService.removeFromOnlineNicknamesRepository(clientId);
+                    messageService.updateUserLogOut();
+
                     return;
                 } catch (IOException e1) {
                     LOGGER.error("IO exception", e);
@@ -89,6 +93,10 @@ public class ClientSocketThread {
 
     public MessageService getMessageService() {
         return messageService;
+    }
+
+    public Socket getAcceptedSocket() {
+        return acceptedSocket;
     }
 }
 

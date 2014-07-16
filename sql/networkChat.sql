@@ -27,18 +27,19 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `networkChat`.`OnlineTimeLog` (
   `socketId` VARCHAR(36) NOT NULL,
-  `logIn` VARCHAR(21) NOT NULL,
-  `logOut` VARCHAR(21) NOT NULL,
-  `ip` VARCHAR(12) NOT NULL,
-  ` nickname` VARCHAR(20) NOT NULL,
+  `logIn` TIMESTAMP NOT NULL,
+  `logOut` TIMESTAMP NULL,
+  `ip` VARCHAR(16) NOT NULL,
+  `nickname` VARCHAR(20) NOT NULL,
   PRIMARY KEY (`socketId`),
-  INDEX `USER_SOCKETID_ONLINETIME_idx` (` nickname` ASC),
+  INDEX `USER_SOCKETID_ONLINETIME_idx` (`nickname` ASC),
   CONSTRAINT `USER_NICKNAME_ONLINETIME`
-    FOREIGN KEY (` nickname`)
+    FOREIGN KEY (`nickname`)
     REFERENCES `networkChat`.`Users` (`nickname`)
     ON DELETE CASCADE
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
+
 
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;

@@ -2,13 +2,15 @@ package ua.khvorov.database.dao;
 
 import org.slf4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import ua.khvorov.api.entity.User;
 import ua.khvorov.database.parser.UserParser;
-import ua.khvorov.entity.User;
 
+import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
-import java.sql.*;
-import java.util.*;
+import java.sql.Timestamp;
+import java.util.Set;
 
 @Component
 public class UserDao {
@@ -19,29 +21,40 @@ public class UserDao {
     private DataSource dataSource;
     @Autowired
     private UserParser userParser;
+    private JdbcTemplate jdbcTemplate;
+
+    @PostConstruct
+    private void setup() {
+        jdbcTemplate = new JdbcTemplate(dataSource);
+    }
+
+    public void addUser(User user) {
+        String sql = "INSERT INTO users VALUES (?,?,?,?,?);";
+        jdbcTemplate.update(sql,
+                user.getNickname(), user.getPassword(), user.getCity(), user.getDateOfBirth(), user.getInfo());
+
+        LOGGER.info("New user was added to db : `{}`", user.getNickname());
+    }
 
     public Set<User> getUsers() {
-        Connection connection = null;
-        Set<User> users = new HashSet<User>();
+        String sql = "SELECT * FROM users;";
 
-        try {
-            connection = dataSource.getConnection();
-            CallableStatement callableStatement = connection.prepareCall("{call getUsers()}");
-            ResultSet resultSet = callableStatement.executeQuery();
-            users = userParser.parseUsers(resultSet);
-        } catch (SQLException e) {
-            LOGGER.error("SQL exception , users wasn't taken", e);
-        } finally {
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                LOGGER.error("SQL exception while connection closing", e);
-            }
-        }
+        return userParser.parseUsers(jdbcTemplate.queryForList(sql));
+    }
 
-        LOGGER.info("Query about users from db was finished,returned size={}", users.size());
-        return users;
+    public void setUserLogIn(String socketId, Timestamp time, String ip, String nickname) {
+        String sql = "INSERT INTO onlineTimeLog (socketId,logIn,ip,nickname) VALUES (?,?,?,?);";
+        jdbcTemplate.update(sql,
+                socketId, time, ip, nickname);
+
+        LOGGER.info("User logs in,socket id = {}", socketId);
+    }
+
+    public void updateUserLogOut(String socketId, Timestamp time) {
+        String sql = "UPDATE onlineTimeLog SET logOut = ? WHERE socketId = ?;";
+        jdbcTemplate.update(sql,
+                time, socketId);
+
+        LOGGER.info("User logs out,socket id = {}", socketId);
     }
 }
